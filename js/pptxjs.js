@@ -114,8 +114,26 @@
         FileReaderJS.setSync(false);
         if (settings.pptxFileUrl != "") {
             try{
-                JSZipUtils.getBinaryContent(settings.pptxFileUrl, function (err, content) {
-                    var blob = new Blob([content]);
+                JSZipUtils.getBinaryContent(settings.pptxFileUrl, async function (err, content) {
+
+                    function urlToBlob (url) {
+                      return new Promise((resolve, reject) => {
+                        let xhr = new XMLHttpRequest();
+                        xhr.open("get", url, true);
+                        xhr.responseType = "blob";
+                        xhr.onload = function () {
+                          if (this.status == 200) {
+                            resolve(this.response);
+                          }
+                        };
+                        xhr.onerror = function(){
+                          resolve(undefined);
+                        };
+                        xhr.send();
+                      });
+                    }
+
+                    var blob = (/^(blob:)/g).test(settings.pptxFileUrl) ? await urlToBlob(settings.pptxFileUrl) : new Blob([content]);
                     var file_name = settings.pptxFileUrl;
                     var fArry = file_name.split(".");
                     fArry.pop();
