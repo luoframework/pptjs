@@ -71,7 +71,8 @@
               transition: "default", /** transition type: "slid","fade","default","random" , to show transition efects :transitionTime > 0.5 */
               transitionTime: 1 /** transition time between slides in seconds */
           },
-          revealjsConfig: {}
+          revealjsConfig: {},
+          errorEvent: options.errorEvent
       }, options);
 
       processFullTheme = settings.themeProcess;
@@ -220,134 +221,140 @@
       var toP = 0, toT = 0;
       function scrollListen () {
         $('#' + domId).on("scroll", function (e) {
-          if (numOfSlidesCurrent >= numOfSlidesTotal) return;
-          if (isStraightHan) return;
-          toP = $(this).scrollTop();
-          if (toT <= toP) {
-            var viewportBottom = toP + $(this).height();
-            var scrollHeight = $(this).prop("scrollHeight");
-            if (scrollHeight - viewportBottom <= 0) {
-              convertToHtml(targetFile, true);
+          try {
+            if (numOfSlidesCurrent >= numOfSlidesTotal) return;
+            if (isStraightHan) return;
+            toP = $(this).scrollTop();
+            if (toT <= toP) {
+              var viewportBottom = toP + $(this).height();
+              var scrollHeight = $(this).prop("scrollHeight");
+              if (scrollHeight - viewportBottom <= 0) {
+                convertToHtml(targetFile, true);
+              }
+            } else {
+              // console.log('向上滚')
             }
-          } else {
-            // console.log('向上滚')
-          }
-          setTimeout(function () { toT = toP; }, 0);
+            setTimeout(function () { toT = toP; }, 0);
+          } catch (e) {}
         });
       }
       //////////////////////////////////////////
 
       function convertToHtml(file, isScroll) {
-          if (isStraightHan) return;
-          isStraightHan = true;
-          if (!isScroll) {
-            clearVar(file);
-          } else {
-            scrollHan(file);
-          }
-          //'use strict';
-          //console.log("file", file, "size:", file.byteLength);
-          if (file.byteLength < 10){
-              console.error("file url error (" + settings.pptxFileUrl + "0)")
-              $(".slides-loadnig-msg").remove();
-              return;
-          }
-          var zip = new JSZip(), s;
-          //if (typeof file === 'string') { // Load
-          zip = zip.load(file);  //zip.load(file, { base64: true });
-          var rslt_ary = processPPTX(zip);
-          //s = readXmlFile(zip, 'ppt/tableStyles.xml');
-          //var slidesHeight = $("#" + divId + " .slide").height();
-          for (var i = 0; i < rslt_ary.length; i++) {
-              switch (rslt_ary[i]["type"]) {
-                  case "slide":
-                      $result.append(rslt_ary[i]["data"]);
-                      break;
-                  case "pptx-thumb":
-                      //$("#pptx-thumb").attr("src", "data:image/jpeg;base64," +rslt_ary[i]["data"]);
-                      break;
-                  case "slideSize":
-                      slideWidth = rslt_ary[i]["data"].width;
-                      slideHeight = rslt_ary[i]["data"].height;
-                      /*
-                      $("#"+divId).css({
-                          'width': slideWidth + 80,
-                          'height': slideHeight + 60
-                      });
-                      */
-                      break;
-                  case "globalCSS":
-                      //console.log(rslt_ary[i]["data"])
-                      $result.append("<style>" + rslt_ary[i]["data"] + "</style>");
-                      break;
-                  case "ExecutionTime":
-                      processMsgQueue(MsgQueue);
-                      setNumericBullets($(".block"));
-                      setNumericBullets($("table td"));
-
-                      isDone = true;
-
-                      if (settings.slideMode && !isSlideMode) {
-                          isSlideMode = true;
-                          initSlideMode(divId, settings);
-                      } else if (!settings.slideMode) {
-                          $(".slides-loadnig-msg").remove();
-                      }
-                      break;
-                  case "progress-update":
-                      //console.log(rslt_ary[i]["data"]); //update progress bar - TODO
-                      updateProgressBar(rslt_ary[i]["data"])
-                      break;
-                  default:
+          try {
+              if (isStraightHan) return;
+              isStraightHan = true;
+              if (!isScroll) {
+                clearVar(file);
+              } else {
+                scrollHan(file);
               }
-          }
-          if (!settings.slideMode || (settings.slideMode && settings.slideType == "revealjs")) {
-
-              // if (document.getElementById("all_slides_warpper") === null) {
-                  $("#" + divId + " .slide").wrapAll("<div id='all_slides_warpper' class='slides'></div>");
-                  //$("#" + divId + " .slides").wrap("<div class='reveal'></div>");
-              // }
-
-              if (settings.slideMode && settings.slideType == "revealjs") {
-                  $("#" + divId).addClass("reveal")
+              //'use strict';
+              //console.log("file", file, "size:", file.byteLength);
+              if (file.byteLength < 10){
+                  console.error("file url error (" + settings.pptxFileUrl + "0)")
+                  $(".slides-loadnig-msg").remove();
+                  return;
               }
-          }
+              var zip = new JSZip(), s;
+              //if (typeof file === 'string') { // Load
+              zip = zip.load(file);  //zip.load(file, { base64: true });
+              var rslt_ary = processPPTX(zip);
+              //s = readXmlFile(zip, 'ppt/tableStyles.xml');
+              //var slidesHeight = $("#" + divId + " .slide").height();
+              for (var i = 0; i < rslt_ary.length; i++) {
+                  switch (rslt_ary[i]["type"]) {
+                      case "slide":
+                          $result.append(rslt_ary[i]["data"]);
+                          break;
+                      case "pptx-thumb":
+                          //$("#pptx-thumb").attr("src", "data:image/jpeg;base64," +rslt_ary[i]["data"]);
+                          break;
+                      case "slideSize":
+                          slideWidth = rslt_ary[i]["data"].width;
+                          slideHeight = rslt_ary[i]["data"].height;
+                          /*
+                          $("#"+divId).css({
+                              'width': slideWidth + 80,
+                              'height': slideHeight + 60
+                          });
+                          */
+                          break;
+                      case "globalCSS":
+                          //console.log(rslt_ary[i]["data"])
+                          $result.append("<style>" + rslt_ary[i]["data"] + "</style>");
+                          break;
+                      case "ExecutionTime":
+                          processMsgQueue(MsgQueue);
+                          setNumericBullets($(".block"));
+                          setNumericBullets($("table td"));
 
-          var sScale = settings.slidesScale;
-          var trnsfrmScl = "";
-          if (sScale != "") {
-              var numsScale = parseInt(sScale);
-              var scaleVal = numsScale / 100;
-              if (settings.slideMode && settings.slideType != "revealjs") {
-                  trnsfrmScl = 'transform:scale(' + scaleVal + '); transform-origin:top';
+                          isDone = true;
+
+                          if (settings.slideMode && !isSlideMode) {
+                              isSlideMode = true;
+                              initSlideMode(divId, settings);
+                          } else if (!settings.slideMode) {
+                              $(".slides-loadnig-msg").remove();
+                          }
+                          break;
+                      case "progress-update":
+                          //console.log(rslt_ary[i]["data"]); //update progress bar - TODO
+                          updateProgressBar(rslt_ary[i]["data"])
+                          break;
+                      default:
+                  }
               }
+              if (!settings.slideMode || (settings.slideMode && settings.slideType == "revealjs")) {
+
+                  // if (document.getElementById("all_slides_warpper") === null) {
+                      $("#" + divId + " .slide").wrapAll("<div id='all_slides_warpper' class='slides'></div>");
+                      //$("#" + divId + " .slides").wrap("<div class='reveal'></div>");
+                  // }
+
+                  if (settings.slideMode && settings.slideType == "revealjs") {
+                      $("#" + divId).addClass("reveal")
+                  }
+              }
+
+              var sScale = settings.slidesScale;
+              var trnsfrmScl = "";
+              if (sScale != "") {
+                  var numsScale = parseInt(sScale);
+                  var scaleVal = numsScale / 100;
+                  if (settings.slideMode && settings.slideType != "revealjs") {
+                      trnsfrmScl = 'transform:scale(' + scaleVal + '); transform-origin:top';
+                  }
+              }
+
+              var slidesHeight = $("#" + divId + " .slide").height();
+              var numOfSlides = $("#" + divId + " .slide").length;
+              var sScaleVal = (sScale != "") ? scaleVal : 1;
+              //console.log("slidesHeight: " + slidesHeight + "\nnumOfSlides: " + numOfSlides + "\nScale: " + sScaleVal)
+
+              // $("#" + divId + " #all_slides_warpper").attr({
+              //     style: trnsfrmScl + ";height: " + (numOfSlides * slidesHeight * sScaleVal) + "px"
+              // })
+
+              //}
+
+              if (numOfSlidesCurrent < numOfSlidesTotal) {
+                $("#" + divId).append(
+                  $("<div></div>").attr({
+                      "class": "slides-loadnig-msg",
+                      "style": "display:block; width:100%; color:white; background-color: #ddd;"
+                  })/*.html("Loading...")*/
+                      .html($("<div></div>").attr({
+                          "class": "slides-loading-progress-bar",
+                          "style": "width: " + allPptProgress + "%; background-color: #4775d1;"
+                      }).html("<span style='text-align: center;'>Loading... (" + allPptProgress + "%)</span>"))
+                );
+              }
+              domIdIndex++;
+              isStraightHan = false;
+          } catch (e) {
+            settings.errorEvent();
           }
-
-          var slidesHeight = $("#" + divId + " .slide").height();
-          var numOfSlides = $("#" + divId + " .slide").length;
-          var sScaleVal = (sScale != "") ? scaleVal : 1;
-          //console.log("slidesHeight: " + slidesHeight + "\nnumOfSlides: " + numOfSlides + "\nScale: " + sScaleVal)
-
-          // $("#" + divId + " #all_slides_warpper").attr({
-          //     style: trnsfrmScl + ";height: " + (numOfSlides * slidesHeight * sScaleVal) + "px"
-          // })
-
-          //}
-
-          if (numOfSlidesCurrent < numOfSlidesTotal) {
-            $("#" + divId).append(
-              $("<div></div>").attr({
-                  "class": "slides-loadnig-msg",
-                  "style": "display:block; width:100%; color:white; background-color: #ddd;"
-              })/*.html("Loading...")*/
-                  .html($("<div></div>").attr({
-                      "class": "slides-loading-progress-bar",
-                      "style": "width: " + allPptProgress + "%; background-color: #4775d1;"
-                  }).html("<span style='text-align: center;'>Loading... (" + allPptProgress + "%)</span>"))
-            );
-          }
-          domIdIndex++;
-          isStraightHan = false;
       }
 
       function initSlideMode(divId, settings) {
